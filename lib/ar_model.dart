@@ -471,7 +471,7 @@ class _ArCubeState extends State<ArCube> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VideoPlayerScreen(videoUrl: uploadedFileUrl ?? ''),
+        builder: (context) => VideoPlayerScreen(videoUrl: uploadedFileUrl!),
       ),
     );
   }
@@ -513,6 +513,7 @@ class _ArCubeState extends State<ArCube> {
       });
 
       documentId = uniqueId;
+
       Fluttertoast.showToast(
         msg: 'Position saved successfully with ID: $documentId',
         toastLength: Toast.LENGTH_SHORT,

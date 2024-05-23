@@ -12,6 +12,7 @@ class VideoPlayerScreen extends StatefulWidget {
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late VideoPlayerController _controller;
+  bool _isPlaying = false;
 
   @override
   void initState() {
@@ -20,8 +21,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _initializeVideoPlayer() async {
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(widget.videoUrl),
+    _controller = VideoPlayerController.network(
+      widget.videoUrl,
     )..initialize().then((_) {
       // Ensure the first frame is shown after the video is initialized.
       setState(() {});
@@ -34,11 +35,29 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _controller.dispose();
   }
 
+  void _playPauseVideo() {
+    setState(() {
+      if (_controller.value.isPlaying) {
+        _controller.pause();
+        _isPlaying = false;
+      } else {
+        _controller.play();
+        _isPlaying = true;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Watch Video"),
+        actions: [
+          IconButton(
+            icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+            onPressed: _playPauseVideo,
+          ),
+        ],
       ),
       body: _controller.value.isInitialized
           ? AspectRatio(
@@ -49,3 +68,4 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     );
   }
 }
+

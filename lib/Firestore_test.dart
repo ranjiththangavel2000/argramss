@@ -25,7 +25,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
   void initState() {
     super.initState();
     _getLocation();
-    _timer = Timer.periodic(Duration(microseconds: 1), (timer) {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       _getLocation();
     });
   }
@@ -203,18 +203,17 @@ class _FirestoreTestState extends State<FirestoreTest> {
   }
 
   void _onArCoreNodeTap(String name) async{
-    print('name : $name');
+    //print('name : $name');
     try {
       DocumentSnapshot documents = await FirebaseFirestore.instance.collection('cubes').doc(name).get();
       String nodeVideoUrl = documents['UploadedFilePath'];
-      print('nodeVideo : $nodeVideoUrl');
+      //print('nodeVideo : $nodeVideoUrl');
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => VideoPlayerScreen(videoUrl: nodeVideoUrl),
         ),
       );
-
     }
     catch(error){
       Fluttertoast.showToast(
@@ -225,12 +224,6 @@ class _FirestoreTestState extends State<FirestoreTest> {
         textColor: Colors.white,
       );
     }
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => CubeVideoScreen(),
-    //   ),
-    // );
   }
 
 
