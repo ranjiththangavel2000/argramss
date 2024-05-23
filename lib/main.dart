@@ -37,14 +37,7 @@ class HomeScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: Container(
-        height: 800, // Specify the height of the container
-        width: 450,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/arm.png"), // Load the image from assets
-            fit: BoxFit.cover, // Cover the entire container
-          ),
-        ),
+
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
