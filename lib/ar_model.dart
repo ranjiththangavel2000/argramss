@@ -15,6 +15,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'cube_video.dart';
 
@@ -65,40 +66,85 @@ class _ArCubeState extends State<ArCube> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text("Upload and Add Thumbnail"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      _uploadFile(setState);
-                    },
-                    child: const Text("Upload Video (Optional)"),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      _recordVideo(setState);
-                    },
-                    child: const Text("Record Video (Optional)"),
-                  ),
-                  ElevatedButton(
-                    onPressed: uploadCompleted
-                        ? () {
-                      _showThumbnailDialog(setState);
-                    }
-                        : null,
-                    child: const Text("Add Description (Required)"),
-                  ),
-                  ElevatedButton(
-                    onPressed: uploadCompleted && thumbnailAdded
-                        ? () {
-                      Navigator.of(context).pop();
-                      _placeCube(lastHitResult!);
-                    }
-                        : null,
-                    child: const Text("Place Cube"),
-                  ),
-                ],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              title: const Text(
+                "Upload and Add Thumbnail",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _uploadFile(setState);
+                      },
+                      icon: const FaIcon(FontAwesomeIcons.upload),
+                      label: const Text("Upload Video (Optional)"),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _recordVideo(setState);
+                      },
+                      icon: const FaIcon(FontAwesomeIcons.video),
+                      label: const Text("Record Video (Optional)"),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: uploadCompleted
+                          ? () {
+                        _showThumbnailDialog(setState);
+                      }
+                          : null,
+                      icon: const FaIcon(FontAwesomeIcons.comment),
+                      label: const Text("Add Description (Required)"),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: uploadCompleted && thumbnailAdded
+                          ? () {
+                        Navigator.of(context).pop();
+                        _placeCube(lastHitResult!);
+                      }
+                          : null,
+                      icon: const FaIcon(FontAwesomeIcons.cube), // Using the FontAwesome cube icon
+                      label: const Text("Place Cube"),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -106,6 +152,8 @@ class _ArCubeState extends State<ArCube> {
       },
     );
   }
+
+
 
   Future<void> _recordVideo(StateSetter parentSetState) async {
     final picker = ImagePicker();
@@ -200,6 +248,7 @@ class _ArCubeState extends State<ArCube> {
           content: const Text("Do you want to upload the recorded video?"),
           actions: [
             TextButton(
+
               onPressed: () {
                 Navigator.of(context).pop();
                 Fluttertoast.showToast(
@@ -542,6 +591,8 @@ class _ArCubeState extends State<ArCube> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("AR Cube"),
+        backgroundColor: Colors.pink,
+        centerTitle: true,
       ),
       body: Column(
         children: [
