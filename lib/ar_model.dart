@@ -16,16 +16,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
 import 'cube_video.dart';
-
 class ArCube extends StatefulWidget {
   const ArCube({Key? key}) : super(key: key);
 
   @override
   State<ArCube> createState() => _ArCubeState();
 }
-
 class _ArCubeState extends State<ArCube> {
   ArCoreController? coreController;
   String planeCoordinates = '';
@@ -73,8 +70,8 @@ class _ArCubeState extends State<ArCube> {
                 "Upload and Add Thumbnail",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
-
+                  fontSize: 20,
+                  color: Colors.blueAccent,
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
@@ -87,13 +84,19 @@ class _ArCubeState extends State<ArCube> {
                       onPressed: () {
                         _uploadFile(setState);
                       },
-                      icon: const FaIcon(FontAwesomeIcons.upload),
-                      label: const Text("Upload Video (Optional)"),
+                      icon: const FaIcon(FontAwesomeIcons.upload, color: Colors.white),
+                      label: const Text(
+                        "Upload Video",
+                        style: TextStyle(fontSize: 16),
+                      ),
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 5,
+                        shadowColor: Colors.black45,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -101,13 +104,19 @@ class _ArCubeState extends State<ArCube> {
                       onPressed: () {
                         _recordVideo(setState);
                       },
-                      icon: const FaIcon(FontAwesomeIcons.video),
-                      label: const Text("Record Video (Optional)"),
+                      icon: const FaIcon(FontAwesomeIcons.video, color: Colors.white),
+                      label: const Text(
+                        "Record Video",
+                        style: TextStyle(fontSize: 16),
+                      ),
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orangeAccent,
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 5,
+                        shadowColor: Colors.black45,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -117,13 +126,19 @@ class _ArCubeState extends State<ArCube> {
                         _showThumbnailDialog(setState);
                       }
                           : null,
-                      icon: const FaIcon(FontAwesomeIcons.comment),
-                      label: const Text("Add Description (Required)"),
+                      icon: const FaIcon(FontAwesomeIcons.comment, color: Colors.white),
+                      label: const Text(
+                        "Add Description",
+                        style: TextStyle(fontSize: 16),
+                      ),
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: uploadCompleted ? Colors.green : Colors.grey,
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: uploadCompleted ? 5 : 0,
+                        shadowColor: uploadCompleted ? Colors.black45 : Colors.transparent,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -134,13 +149,19 @@ class _ArCubeState extends State<ArCube> {
                         _placeCube(lastHitResult!);
                       }
                           : null,
-                      icon: const FaIcon(FontAwesomeIcons.cube), // Using the FontAwesome cube icon
-                      label: const Text("Place Cube"),
+                      icon: const FaIcon(FontAwesomeIcons.cube, color: Colors.white),
+                      label: const Text(
+                        "Place Cube",
+                        style: TextStyle(fontSize: 16),
+                      ),
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: uploadCompleted && thumbnailAdded ? Colors.purpleAccent : Colors.grey,
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: uploadCompleted && thumbnailAdded ? 5 : 0,
+                        shadowColor: uploadCompleted && thumbnailAdded ? Colors.black45 : Colors.transparent,
                       ),
                     ),
                   ],
@@ -183,7 +204,17 @@ class _ArCubeState extends State<ArCube> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text("Preview Video"),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              title: const Text(
+                "Preview Video",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.blueAccent,
+                ),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -200,17 +231,40 @@ class _ArCubeState extends State<ArCube> {
                       }
                     },
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      videoPlayerController.play();
-                    },
-                    child: const Text("Play"),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      videoPlayerController.pause();
-                    },
-                    child: const Text("Pause"),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          videoPlayerController.play();
+                        },
+                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        label: const Text("Play"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          videoPlayerController.pause();
+                        },
+                        icon: const Icon(Icons.pause, color: Colors.white),
+                        label: const Text("Pause"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -221,7 +275,13 @@ class _ArCubeState extends State<ArCube> {
                     videoPlayerController.dispose();
                     _recordVideo(parentSetState);
                   },
-                  child: const Text("Retake"),
+                  child: const Text(
+                    "Retake",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.redAccent,
+                    ),
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
@@ -229,7 +289,13 @@ class _ArCubeState extends State<ArCube> {
                     videoPlayerController.dispose();
                     _showUploadVideoDialog(pickedFile, parentSetState);
                   },
-                  child: const Text("Upload"),
+                  child: const Text(
+                    "Upload",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.blueAccent,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -414,7 +480,6 @@ class _ArCubeState extends State<ArCube> {
       );
     }
   }
-
   void _showThumbnailDialog(StateSetter parentSetState) {
     final TextEditingController thumbnailController = TextEditingController();
     showDialog(

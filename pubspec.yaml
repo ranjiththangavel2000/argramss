@@ -36,6 +36,7 @@ dependencies:
   geolocator: ^7.6.2
   fluttertoast: ^8.2.5
   vector_math: ^2.1.0
+  flutter_geo_hash: ^0.0.4
   sensors_plus: ^5.0.1
   camera: ^0.10.6
   image_picker: ^1.1.1
@@ -47,6 +48,7 @@ dependencies:
   animated_text_kit: ^4.2.2
   http: ^0.13.4
   image: ^3.0.1
+  dart_geohash: ^2.1.0
   path_provider: ^2.0.11
   video_thumbnail: ^0.5.3
   url_launcher: ^6.2.6
@@ -82,6 +84,7 @@ flutter:
     - assets/vf.mp4
     - assets/location.glb
     - assets/arm.png
+    - assets/giphy.gif
 
   # To add assets to your application, add an assets section, like this:
   # assets:

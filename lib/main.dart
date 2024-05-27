@@ -130,12 +130,15 @@ class MyApp extends StatelessWidget {
 }
 
 class HomeScreen extends StatelessWidget {
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+
         title: Text('AR Gram'),
+
         backgroundColor: Colors.pink,
+        
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -171,8 +174,10 @@ class HomeScreen extends StatelessWidget {
             // Image Section
             Container(
               margin: EdgeInsets.all(16.0),
-              child: Image.network(
-                'https://www.blippar.com/uploads/images/_blogListingM/blog-gamification.jpg', // Replace with your image URL
+              height: 230,
+              width: 300,
+              child: Image.asset(
+                'assets/giphy.gif', // Replace with your image asset path
                 fit: BoxFit.cover,
               ),
             ),
