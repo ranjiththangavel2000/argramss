@@ -613,10 +613,9 @@ class _ArCubeState extends State<ArCube> {
     final roundedCubeLongitude = _roundToDecimalPlaces(cubeLongitude, 7);
 
     final uniqueId = uuid.v4();
-    final DateTime cubeDate = DateTime.now();
+    // final DateTime cubeDate = DateTime.now();
 
     try {
-      String formattedDate = '${cubeDate.year}-${cubeDate.month.toString().padLeft(2, '0')}-${cubeDate.day.toString().padLeft(2, '0')}';
 
       await FirebaseFirestore.instance.collection('cubes').doc(uniqueId).set({
         'CubeLatitude': roundedCubeLatitude,
@@ -628,7 +627,7 @@ class _ArCubeState extends State<ArCube> {
         'ThumbnailText': thumbnailText,
         'UniqueId': uniqueId,
         'thumbImage': textImageURL,
-        'timestamp': formattedDate, // Store current date and time as Timestamp
+        'timestamp': FieldValue.serverTimestamp(), // Use server timestamp
       });
 
       documentId = uniqueId;
