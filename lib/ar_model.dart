@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -612,8 +613,11 @@ class _ArCubeState extends State<ArCube> {
     final roundedCubeLongitude = _roundToDecimalPlaces(cubeLongitude, 7);
 
     final uniqueId = uuid.v4();
+    final DateTime cubeDate = DateTime.now();
 
     try {
+      String formattedDate = '${cubeDate.year}-${cubeDate.month.toString().padLeft(2, '0')}-${cubeDate.day.toString().padLeft(2, '0')}';
+
       await FirebaseFirestore.instance.collection('cubes').doc(uniqueId).set({
         'CubeLatitude': roundedCubeLatitude,
         'CubeLongitude': roundedCubeLongitude,
@@ -624,6 +628,7 @@ class _ArCubeState extends State<ArCube> {
         'ThumbnailText': thumbnailText,
         'UniqueId': uniqueId,
         'thumbImage': textImageURL,
+        'timestamp': formattedDate, // Store current date and time as Timestamp
       });
 
       documentId = uniqueId;
