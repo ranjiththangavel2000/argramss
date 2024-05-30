@@ -1,326 +1,3 @@
-// import 'dart:async';
-// import 'dart:math';
-// import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:flutter/material.dart';
-// import 'package:fluttertoast/fluttertoast.dart';
-// import 'package:geolocator/geolocator.dart';
-// import 'package:http/http.dart' as http;
-// import 'package:vector_math/vector_math_64.dart' as vector_math;
-//
-// import 'cube_video.dart'; // Assuming you have a widget for displaying cube videos
-//
-// class FirestoreTest extends StatefulWidget {
-//   @override
-//   _FirestoreTestState createState() => _FirestoreTestState();
-// }
-//
-// class _FirestoreTestState extends State<FirestoreTest> {
-//   ArCoreController? coreController;
-//   double currentLatitude = 0.0;
-//   double currentLongitude = 0.0;
-//   late Timer _timer;
-//   late Timer _nodeTapTimer;
-//   int count = 0;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _deleteAllCubeLocations();
-//     _getLocation();
-//     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-//       _getLocation();
-//     });
-//     _nodeTapTimer = Timer.periodic(Duration(seconds: 3), (timer) {
-//       count = 0;
-//     });
-//   }
-//
-//   @override
-//   void dispose() {
-//     _timer.cancel();
-//     coreController?.dispose();
-//     _nodeTapTimer.cancel();
-//     super.dispose();
-//   }
-//
-//   Future<void> _getLocation() async {
-//     try {
-//       Position position = await Geolocator.getCurrentPosition(
-//         desiredAccuracy: LocationAccuracy.best,
-//       );
-//       setState(() {
-//         currentLatitude = position.latitude;
-//         currentLongitude = position.longitude;
-//       });
-//       await _cubePlace(DateTime.now());
-//     } catch (e) {
-//       print("Error: $e");
-//     }
-//   }
-//   void cubeCreate(ArCoreController controller) {
-//     coreController = controller;
-//     coreController!.onPlaneDetected = null;
-//   }
-//   Future<void> _deleteAllCubeLocations() async {
-//     FirebaseFirestore firestore = FirebaseFirestore.instance;
-//     CollectionReference collectionRef = firestore.collection('cube_locations_placed');
-//     QuerySnapshot querySnapshot = await collectionRef.get();
-//     for (QueryDocumentSnapshot documentSnapshot in querySnapshot.docs) {
-//       await documentSnapshot.reference.delete();
-//     }
-//     Fluttertoast.showToast(
-//       msg: 'All cube locations deleted',
-//       toastLength: Toast.LENGTH_SHORT,
-//       gravity: ToastGravity.BOTTOM,
-//       backgroundColor: Colors.green,
-//       textColor: Colors.white,
-//     );
-//   }
-//   Future<void> _cubePlace(DateTime selectedDate) async {
-//     if (coreController == null) {
-//       Fluttertoast.showToast(
-//         msg: 'ARCore controller is not initialized yet.',
-//         toastLength: Toast.LENGTH_SHORT,
-//         gravity: ToastGravity.BOTTOM,
-//         backgroundColor: Colors.red,
-//         textColor: Colors.white,
-//       );
-//       return;
-//     }
-//     FirebaseFirestore firestore = FirebaseFirestore.instance;
-//     try {
-//       // Convert selectedDate to the start and end of the day
-//       DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
-//       DateTime endOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
-//       // Convert DateTime to Timestamp
-//       Timestamp startTimestamp = Timestamp.fromDate(startOfDay);
-//       Timestamp endTimestamp = Timestamp.fromDate(endOfDay);
-//       QuerySnapshot querySnapshot = await firestore
-//           .collection('cubes')
-//           .where('timestamp', isGreaterThanOrEqualTo: startTimestamp)
-//           .where('timestamp', isLessThanOrEqualTo: endTimestamp)
-//           .get();
-//       if (querySnapshot.docs.isEmpty) {
-//         Fluttertoast.showToast(
-//           msg: 'No cubes found for the selected date: ${selectedDate.toLocal().toIso8601String()}',
-//           toastLength: Toast.LENGTH_SHORT,
-//           gravity: ToastGravity.BOTTOM,
-//           backgroundColor: Colors.yellow,
-//           textColor: Colors.white,
-//         );
-//         return;
-//       }
-//       for (QueryDocumentSnapshot documentSnapshot in querySnapshot.docs) {
-//         var data = documentSnapshot.data() as Map<String, dynamic>?;
-//         if (data == null) {
-//           Fluttertoast.showToast(
-//             msg: 'Invalid data for document: ${documentSnapshot.id}',
-//             toastLength: Toast.LENGTH_SHORT,
-//             gravity: ToastGravity.BOTTOM,
-//             backgroundColor: Colors.red,
-//             textColor: Colors.white,
-//           );
-//           continue;
-//         }
-//
-//         double cubeLat = data['CubeLatitude'];
-//         double cubeLon = data['CubeLongitude'];
-//         double y = data['CubeVectorPosition']['y']?.toDouble() ?? 0.0;
-//         String cubeID = documentSnapshot.id;
-//         String thumb = data['thumbImage'];
-//
-//         // Display a toast message with the cubeID
-//         Fluttertoast.showToast(
-//           msg: 'Retrieved cube with ID: $cubeID',
-//           toastLength: Toast.LENGTH_SHORT,
-//           gravity: ToastGravity.BOTTOM,
-//           backgroundColor: Colors.blue,
-//           textColor: Colors.white,
-//         );
-//
-//         // Check if the cube is already placed
-//         DocumentSnapshot placedCubeSnapshot = await firestore.collection('cube_locations_placed').doc(cubeID).get();
-//         if (placedCubeSnapshot.exists) {
-//           continue;
-//         }
-//
-//         // Convert lat/lon to AR coordinates (x, z) relative to the current device location
-//         double x = (cubeLat - currentLatitude) * 111139; // in meters
-//         double z = (cubeLon - currentLongitude) * 111139 * cos(currentLatitude * (pi / 180)); // in meters
-//
-//         final response = await http.get(Uri.parse(thumb));
-//         if (response.statusCode == 200) {
-//           final bytes = response.bodyBytes;
-//           final materials = ArCoreMaterial(color: Colors.red, metallic: 0.5, textureBytes: bytes);
-//
-//           final cube = ArCoreCube(
-//             size: vector_math.Vector3(0.35, 0.9, 0.5),
-//             materials: [materials],
-//           );
-//
-//           final node = ArCoreRotatingNode(
-//             shape: cube,
-//             degreesPerSecond: 30,
-//             position: vector_math.Vector3(x, y + 0.25, z),
-//             name: cubeID,
-//           );
-//
-//           coreController!.addArCoreNode(node);
-//
-//           Fluttertoast.showToast(
-//             msg: 'Cube Placed',
-//             toastLength: Toast.LENGTH_SHORT,
-//             gravity: ToastGravity.BOTTOM,
-//             backgroundColor: Colors.yellow,
-//             textColor: Colors.white,
-//           );
-//
-//           coreController!.onNodeTap = _onArCoreNodeTap;
-//           await _saveCubePosition(x, y, z, currentLatitude, currentLongitude, cubeID);
-//
-//           // Retrieve cubeId URL from Firestore based on cubeID
-//           DocumentSnapshot cubeDocument = await firestore.collection('cubes').doc(cubeID).get();
-//           if (cubeDocument.exists) {
-//             String cubeIdUrl = cubeDocument['cubeIdUrl'];
-//             Fluttertoast.showToast(
-//               msg: 'CubeID URL for $cubeID: $cubeIdUrl',
-//               toastLength: Toast.LENGTH_LONG,
-//               gravity: ToastGravity.BOTTOM,
-//               backgroundColor: Colors.green,
-//               textColor: Colors.white,
-//             );
-//           } else {
-//             Fluttertoast.showToast(
-//               msg: 'CubeID URL not found for $cubeID',
-//               toastLength: Toast.LENGTH_SHORT,
-//               gravity: ToastGravity.BOTTOM,
-//               backgroundColor: Colors.yellow,
-//               textColor: Colors.white,
-//             );
-//           }
-//         } else {
-//           Fluttertoast.showToast(
-//             msg: 'Failed to load image from URL: ${response.statusCode}',
-//             toastLength: Toast.LENGTH_SHORT,
-//             gravity: ToastGravity.BOTTOM,
-//             backgroundColor: Colors.red,
-//             textColor: Colors.white,
-//           );
-//         }
-//       }
-//     } catch (error) {
-//       Fluttertoast.showToast(
-//         msg: 'Failed to place cube: $error',
-//         toastLength: Toast.LENGTH_SHORT,
-//         gravity: ToastGravity.BOTTOM,
-//         backgroundColor: Colors.red,
-//         textColor: Colors.white,
-//       );
-//     }
-//   }
-
-//   Future<void> _saveCubePosition(double x, double y, double z, double phoneLat, double phoneLon, String cubeID) async {
-//     await FirebaseFirestore.instance.collection('cube_locations_placed').doc(cubeID).set({
-//       'x': x,
-//       'y': y,
-//       'z': z,
-//       'phoneLat': phoneLat,
-//       'phoneLon': phoneLon,
-//       'cubeID': cubeID,
-//     });
-//
-//     Fluttertoast.showToast(
-//       msg: 'Cube position saved to Firestore with ID: $cubeID',
-//       toastLength: Toast.LENGTH_SHORT,
-//       gravity: ToastGravity.BOTTOM,
-//       backgroundColor: Colors.green,
-//       textColor: Colors.white,
-//     );
-//   }
-//
-//   void _onArCoreNodeTap(String name) async {
-//     String nodeName = name;
-//     if (nodeName == name && count == 1) {
-//       print('IF part');
-//     } else {
-//       print('Else Part');
-//
-//       try {
-//         count += 1;
-//         DocumentSnapshot documents = await FirebaseFirestore.instance.collection('cubes').doc(name).get();
-//         String nodeVideoUrl = documents['UploadedFilePath'];
-//         print('nodeVideo : $nodeVideoUrl');
-//         Navigator.push(
-//           context,
-//           MaterialPageRoute(
-//             builder: (context) => VideoPlayerScreen(videoUrl: nodeVideoUrl),
-//           ),
-//         );
-//       } catch (error) {
-//         Fluttertoast.showToast(
-//           msg: 'error : $error',
-//           toastLength: Toast.LENGTH_SHORT,
-//           gravity: ToastGravity.BOTTOM,
-//           backgroundColor: Colors.green,
-//           textColor: Colors.white,
-//         );
-//       }
-//     }
-//   }
-//
-//   Future<void> _showDatePicker(BuildContext context) async {
-//     final DateTime? pickedDate = await showDatePicker(
-//       context: context,
-//       initialDate: DateTime.now(),
-//       firstDate: DateTime(1900),
-//       lastDate: DateTime(2100),
-//     );
-//
-//     if (pickedDate != null) {
-//       await _cubePlace(pickedDate);
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text("Cube Placement"),
-//         backgroundColor: Colors.pink,
-//         centerTitle: true,
-//       ),
-//       body: Column(
-//         children: [
-//           Padding(
-//             padding: const EdgeInsets.all(8.0),
-//             child: Text(
-//               "Current Location: Lat: $currentLatitude, Lon: $currentLongitude",
-//               style: TextStyle(fontSize: 16),
-//             ),
-//           ),
-//           ElevatedButton(
-//             onPressed: () => _showDatePicker(context),
-//             child: Text("Select Date"),
-//           ),
-//           Expanded(
-//             child: ArCoreView(
-//               onArCoreViewCreated: cubeCreate,
-//               enablePlaneRenderer: true,
-//               enableTapRecognizer: true,
-//               enableUpdateListener: true,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-//
-//
-
-
-
 import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
@@ -352,6 +29,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
   bool imgId = true;
   late Timer _timer;
   late Timer _nodeTapTimer;
+  late Timer _distanceUpdateTimer;
   int count = 0;
   List<String> CubeImageURLs = [];
   List<String> CubeIdUrl = [];
@@ -362,16 +40,23 @@ class _FirestoreTestState extends State<FirestoreTest> {
     _timer = Timer.periodic(Duration(milliseconds: 200), (timer) {
       _getLocation();
     });
+    _distanceUpdateTimer = Timer.periodic(Duration(milliseconds: 1), (timer) {
+      _calculateDistance;
+    });
+
     _nodeTapTimer = Timer.periodic(Duration(seconds: 3), (timer) {
       count = 0;
     });
   }
+
   @override
   void dispose() {
     _timer.cancel();
     _nodeTapTimer.cancel();
+    _distanceUpdateTimer.cancel();
     super.dispose();
   }
+
   Future<void> _getLocation() async {
     try {
       Position position = await Geolocator.getCurrentPosition(
@@ -381,15 +66,16 @@ class _FirestoreTestState extends State<FirestoreTest> {
         currentLatitude = position.latitude;
         currentLongitude = position.longitude;
       });
-      await _cubePlace(DateTime.now());
     } catch (e) {
       print("Error: $e");
     }
   }
+
   void cubeCreate(ArCoreController controller) {
     coreController = controller;
     coreController!.onPlaneDetected = null;
   }
+
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371e3;
     double dLat = _degreesToRadians(lat2 - lat1);
@@ -400,9 +86,11 @@ class _FirestoreTestState extends State<FirestoreTest> {
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return earthRadius * c;
   }
+
   double _degreesToRadians(double degrees) {
     return degrees * pi / 180;
   }
+
   double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double radiusOfEarthKm = 6371.0;
     // Convert degrees to radians
@@ -424,6 +112,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
     double distanceMeters = distanceKm * 1000;
     return distanceMeters;
   }
+
   Future<void> _cubePlace(DateTime selectedDate) async {
     if (coreController == null) {
       Fluttertoast.showToast(
@@ -501,49 +190,49 @@ class _FirestoreTestState extends State<FirestoreTest> {
             textColor: Colors.white,
           );
 
-        final response = await http.get(Uri.parse(thumb));
-        if (response.statusCode == 200) {
-          final bytes = response.bodyBytes;
-          final materials = ArCoreMaterial(
-              color: Colors.red, metallic: 0.5, textureBytes: bytes);
+          final response = await http.get(Uri.parse(thumb));
+          if (response.statusCode == 200) {
+            final bytes = response.bodyBytes;
+            final materials = ArCoreMaterial(
+                color: Colors.red, metallic: 0.5, textureBytes: bytes);
 
-          final cube = ArCoreCube(
-            size: vector64.Vector3(0.3, 0.5, 0.35),
-            materials: [materials],
-          );
+            final cube = ArCoreCube(
+              size: vector64.Vector3(0.3, 0.5, 0.35),
+              materials: [materials],
+            );
 
-          final node = ArCoreRotatingNode(
-            shape: cube,
-            degreesPerSecond: 30,
-            position: vector64.Vector3(x, y + 0.25, z), name: cubeID,
-          );
+            final node = ArCoreRotatingNode(
+              shape: cube,
+              degreesPerSecond: 30,
+              position: vector64.Vector3(x, y + 0.25, z), name: cubeID,
+            );
 
-          coreController!.addArCoreNode(node);
+            coreController!.addArCoreNode(node);
 
-          Fluttertoast.showToast(
-            msg: 'Cube Placed',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            backgroundColor: Colors.yellow,
-            textColor: Colors.white,
-          );
+            Fluttertoast.showToast(
+              msg: 'Cube Placed',
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: Colors.yellow,
+              textColor: Colors.white,
+            );
 
-          coreController!.onNodeTap = _onArCoreNodeTap;
-          CubeImageURLs.add(thumb);
-          CubeIdUrl.add(cubeID);
-          await _saveCubePosition(
-              x, y, z, currentLatitude, currentLongitude, cubeID);
+            coreController!.onNodeTap = _onArCoreNodeTap;
+            CubeImageURLs.add(thumb);
+            CubeIdUrl.add(cubeID);
+            await _saveCubePosition(
+                x, y, z, currentLatitude, currentLongitude, cubeID);
 
-          // Retrieve cubeId URL from Firestore based on cubeID
-        }else {
-          Fluttertoast.showToast(
-            msg: 'Failed to load image from URL: ${response.statusCode}',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-          );
-        }
+            // Retrieve cubeId URL from Firestore based on cubeID
+          }else {
+            Fluttertoast.showToast(
+              msg: 'Failed to load image from URL: ${response.statusCode}',
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+            );
+          }
         }
         else {
           Fluttertoast.showToast(
@@ -554,8 +243,8 @@ class _FirestoreTestState extends State<FirestoreTest> {
             textColor: Colors.white,
           );
         }
-        }
-      } catch (error) {
+      }
+    } catch (error) {
       Fluttertoast.showToast(
         msg: 'Failed to place cube: $error',
         toastLength: Toast.LENGTH_SHORT,
@@ -565,6 +254,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
       );
     }
   }
+
   Future<void> _saveCubePosition(double x, double y, double z, double phoneLat, double phoneLon, String cubeID) async {
     DocumentReference ref = await FirebaseFirestore.instance.collection('cube_locations_placed').add({
       'x': x,
@@ -582,16 +272,21 @@ class _FirestoreTestState extends State<FirestoreTest> {
       textColor: Colors.white,
     );
   }
-  void _onArCoreNodeTap(String name) async {
+
+  void _onArCoreNodeTap(String name) async{
+
     String nodeName = name;
-    if (nodeName == name && count == 1) {
+    if(nodeName == name && count == 1)
+    {
       print('IF part');
     } else {
+
       print('Else Part');
+
       try {
         count += 1;
         DocumentSnapshot documents = await FirebaseFirestore.instance.collection('cubes').doc(name).get();
-        String nodeVideoUrl = documents['videoURL'];
+        String nodeVideoUrl = documents['UploadedFilePath'];
         print('nodeVideo : $nodeVideoUrl');
         Navigator.push(
           context,
@@ -599,7 +294,8 @@ class _FirestoreTestState extends State<FirestoreTest> {
             builder: (context) => VideoPlayerScreen(videoUrl: nodeVideoUrl),
           ),
         );
-      } catch (error) {
+      }
+      catch(error){
         Fluttertoast.showToast(
           msg: 'error : $error',
           toastLength: Toast.LENGTH_SHORT,
@@ -610,6 +306,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
       }
     }
   }
+
   void _onCubeImageTap(String cubeIds) async{
     imgId = false;
     hi = true;
@@ -625,21 +322,20 @@ class _FirestoreTestState extends State<FirestoreTest> {
     cubeDirLatitude = phoneLat + a * 0.00001;
     cubeDirLongitude = phoneLon + b * 0.00001;
     print('cubeDirLatitude : $cubeDirLatitude cubeDirLongitude : $cubeDirLongitude');
-    distanceCal = calculateDistance(currentLatitude, currentLongitude, cubeDirLat, cubeDirLon);
+      distanceCal = _calculateDistance(currentLatitude, currentLongitude, cubeDirLat, cubeDirLon);
+
     print('Discal : $distanceCal');
   }
-  Future<void> _showDatePicker(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
+
+  Future<DateTime?> _showDatePicker(BuildContext context) async {
+    return showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(1900),
       lastDate: DateTime(2100),
     );
-
-    if (pickedDate != null) {
-      await _cubePlace(pickedDate);
-    }
   }
+
   void _back(){
     imgId = true;
     hi = false;
@@ -660,10 +356,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
             ),
           ),
 
-          ElevatedButton(
-            onPressed: () => _showDatePicker(context),
-            child: Text("Select Date"),
-          ),
+
           // ARCore view
           Expanded(
             child: Stack(
@@ -773,7 +466,10 @@ class _FirestoreTestState extends State<FirestoreTest> {
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
               onPressed: () async {
-                await _cubePlace(DateTime.now());
+                DateTime? pickedDate = await _showDatePicker(context);
+                if (pickedDate != null) {
+                  await _cubePlace(pickedDate);
+                }
               },
               child: Text('Get Cubes Near Me'),
             ),
@@ -783,3 +479,4 @@ class _FirestoreTestState extends State<FirestoreTest> {
     );
   }
 }
+

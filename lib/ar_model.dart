@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -68,7 +67,7 @@ class _ArCubeState extends State<ArCube> {
                 borderRadius: BorderRadius.circular(15),
               ),
               title: const Text(
-                "Upload and Add Thumbnail",
+                "Upload and Add Description",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
@@ -487,13 +486,13 @@ class _ArCubeState extends State<ArCube> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Add Thumbnail"),
+          title: const Text("Add Description"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: thumbnailController,
-                decoration: const InputDecoration(hintText: "Enter thumbnail text"),
+                decoration: const InputDecoration(hintText: "Enter Description"),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -505,7 +504,7 @@ class _ArCubeState extends State<ArCube> {
 
                     Navigator.of(context).pop();
                     Fluttertoast.showToast(
-                      msg: 'Thumbnail added successfully!',
+                      msg: 'Description added successfully!',
                       toastLength: Toast.LENGTH_SHORT,
                       gravity: ToastGravity.BOTTOM,
                       backgroundColor: Colors.green,
@@ -624,7 +623,7 @@ class _ArCubeState extends State<ArCube> {
         'PhoneLongitude': longitude,
         'CubeVectorPosition': cubePositionMap,
         'UploadedFilePath': uploadedFileUrl,
-        'ThumbnailText': thumbnailText,
+        'description': thumbnailText,
         'UniqueId': uniqueId,
         'thumbImage': textImageURL,
         'timestamp': FieldValue.serverTimestamp(), // Use server timestamp
