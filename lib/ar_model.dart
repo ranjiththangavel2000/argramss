@@ -174,8 +174,6 @@ class _ArCubeState extends State<ArCube> {
     );
   }
 
-
-
   Future<void> _recordVideo(StateSetter parentSetState) async {
     final picker = ImagePicker();
     final XFile? pickedFile = await picker.pickVideo(

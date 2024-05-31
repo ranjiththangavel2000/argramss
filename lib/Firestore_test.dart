@@ -9,10 +9,12 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'cube_video.dart';
+
 class FirestoreTest extends StatefulWidget {
   @override
   _FirestoreTestState createState() => _FirestoreTestState();
 }
+
 class _FirestoreTestState extends State<FirestoreTest> {
   ArCoreController? coreController;
   String planeCoordinates = '';
@@ -29,10 +31,13 @@ class _FirestoreTestState extends State<FirestoreTest> {
   bool imgId = true;
   late Timer _timer;
   late Timer _nodeTapTimer;
+  bool isCubesNearYouVisible = false;
   late Timer _distanceUpdateTimer;
   int count = 0;
   List<String> CubeImageURLs = [];
   List<String> CubeIdUrl = [];
+  DateTime? mydate;
+
   @override
   void initState() {
     super.initState();
@@ -195,6 +200,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
             final bytes = response.bodyBytes;
             final materials = ArCoreMaterial(
                 color: Colors.red, metallic: 0.5, textureBytes: bytes);
+            double scaleFactor = 1 / distance;
 
             final cube = ArCoreCube(
               size: vector64.Vector3(0.3, 0.5, 0.35),
@@ -204,7 +210,9 @@ class _FirestoreTestState extends State<FirestoreTest> {
             final node = ArCoreRotatingNode(
               shape: cube,
               degreesPerSecond: 30,
-              position: vector64.Vector3(x, y + 0.25, z), name: cubeID,
+              position: vector64.Vector3(x, y + 0.25, z),
+              scale: vector64.Vector3(scaleFactor, scaleFactor, scaleFactor),
+              name: cubeID,
             );
 
             coreController!.addArCoreNode(node);
@@ -322,9 +330,16 @@ class _FirestoreTestState extends State<FirestoreTest> {
     cubeDirLatitude = phoneLat + a * 0.00001;
     cubeDirLongitude = phoneLon + b * 0.00001;
     print('cubeDirLatitude : $cubeDirLatitude cubeDirLongitude : $cubeDirLongitude');
-      distanceCal = _calculateDistance(currentLatitude, currentLongitude, cubeDirLat, cubeDirLon);
+    distanceCal = _calculateDistance(currentLatitude, currentLongitude, cubeDirLat, cubeDirLon);
 
     print('Discal : $distanceCal');
+    // Fluttertoast.showToast(
+    //   msg: 'Distance to cube: ${distanceCal?.toStringAsFixed(2)} meters',
+    //   toastLength: Toast.LENGTH_SHORT,
+    //   gravity: ToastGravity.BOTTOM,
+    //   backgroundColor: Colors.blue,
+    //   textColor: Colors.white,
+    // );
   }
 
   Future<DateTime?> _showDatePicker(BuildContext context) async {
@@ -417,14 +432,14 @@ class _FirestoreTestState extends State<FirestoreTest> {
                                   itemBuilder: (context, index) {
                                     if(imgId)
                                       return Padding(
-                                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 7),
+                                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 0),
                                         child: GestureDetector(
                                           onTap: () {
                                             _onCubeImageTap(CubeIdUrl[index]);
                                           },
                                           child: Container(
                                             width: 60 , // Adjust width as needed
-                                            height: 50, // Adjust height as needed
+                                            height: 60, // Adjust height as needed
                                             child: Column(
                                               children: [
                                                 ClipRRect(
@@ -463,15 +478,39 @@ class _FirestoreTestState extends State<FirestoreTest> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () async {
-                DateTime? pickedDate = await _showDatePicker(context);
-                if (pickedDate != null) {
-                  await _cubePlace(pickedDate);
-                }
-              },
-              child: Text('Get Cubes Near Me'),
+            padding: const EdgeInsets.fromLTRB(10, 30, 10, 10),
+            child:Column(
+              children: [
+                Container(
+                width: 100,
+                height: 50,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      DateTime? pickedDate = await _showDatePicker(context);
+                      if (pickedDate != null) {
+                        await _cubePlace(pickedDate);
+                        setState(() {
+                          mydate=pickedDate;
+                        });
+                      }
+                    },
+                    child: Text("Get Cubes"),
+                    style: ButtonStyle(
+                      padding: WidgetStatePropertyAll(EdgeInsets.all(0)),
+                    ),
+                
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(5.0),
+                  child: Text(
+                    mydate!=null?'Picked Date: ${mydate.toString()}':'No Date Picked',
+                    style: TextStyle(
+                      fontWeight:FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
