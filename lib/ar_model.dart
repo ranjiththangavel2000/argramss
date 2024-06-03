@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -84,14 +86,16 @@ class _ArCubeState extends State<ArCube> {
                       onPressed: () {
                         _uploadFile(setState);
                       },
-                      icon: const FaIcon(FontAwesomeIcons.upload, color: Colors.white),
+                      icon: const FaIcon(
+                          FontAwesomeIcons.upload, color: Colors.white),
                       label: const Text(
                         "Upload Video",
                         style: TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 20),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -104,14 +108,16 @@ class _ArCubeState extends State<ArCube> {
                       onPressed: () {
                         _recordVideo(setState);
                       },
-                      icon: const FaIcon(FontAwesomeIcons.video, color: Colors.white),
+                      icon: const FaIcon(
+                          FontAwesomeIcons.video, color: Colors.white),
                       label: const Text(
                         "Record Video",
                         style: TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orangeAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 20),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -126,19 +132,23 @@ class _ArCubeState extends State<ArCube> {
                         _showThumbnailDialog(setState);
                       }
                           : null,
-                      icon: const FaIcon(FontAwesomeIcons.comment, color: Colors.white),
+                      icon: const FaIcon(
+                          FontAwesomeIcons.comment, color: Colors.white),
                       label: const Text(
                         "Add Description",
                         style: TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: uploadCompleted ? Colors.green : Colors.grey,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        backgroundColor: uploadCompleted ? Colors.green : Colors
+                            .grey,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 20),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: uploadCompleted ? 5 : 0,
-                        shadowColor: uploadCompleted ? Colors.black45 : Colors.transparent,
+                        shadowColor: uploadCompleted ? Colors.black45 : Colors
+                            .transparent,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -149,19 +159,24 @@ class _ArCubeState extends State<ArCube> {
                         _placeCube(lastHitResult!);
                       }
                           : null,
-                      icon: const FaIcon(FontAwesomeIcons.cube, color: Colors.white),
+                      icon: const FaIcon(
+                          FontAwesomeIcons.cube, color: Colors.white),
                       label: const Text(
                         "Place Cube",
                         style: TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: uploadCompleted && thumbnailAdded ? Colors.purpleAccent : Colors.grey,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        backgroundColor: uploadCompleted && thumbnailAdded
+                            ? Colors.purpleAccent
+                            : Colors.grey,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 20),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: uploadCompleted && thumbnailAdded ? 5 : 0,
-                        shadowColor: uploadCompleted && thumbnailAdded ? Colors.black45 : Colors.transparent,
+                        shadowColor: uploadCompleted && thumbnailAdded ? Colors
+                            .black45 : Colors.transparent,
                       ),
                     ),
                   ],
@@ -194,7 +209,8 @@ class _ArCubeState extends State<ArCube> {
   }
 
   void _previewRecordedVideo(XFile pickedFile, StateSetter parentSetState) {
-    final VideoPlayerController videoPlayerController = VideoPlayerController.file(File(pickedFile.path));
+    final VideoPlayerController videoPlayerController = VideoPlayerController
+        .file(File(pickedFile.path));
 
     showDialog(
       context: context,
@@ -241,7 +257,8 @@ class _ArCubeState extends State<ArCube> {
                         label: const Text("Play"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 20),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -256,7 +273,8 @@ class _ArCubeState extends State<ArCube> {
                         label: const Text("Pause"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 20),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -338,12 +356,14 @@ class _ArCubeState extends State<ArCube> {
     );
   }
 
-  Future<void> _uploadRecordedVideo(XFile pickedFile, StateSetter parentSetState) async {
+  Future<void> _uploadRecordedVideo(XFile pickedFile,
+      StateSetter parentSetState) async {
     File file = File(pickedFile.path);
     String fileName = uuid.v4();
 
     try {
-      UploadTask uploadTask = FirebaseStorage.instance.ref('uploads/$fileName').putFile(file);
+      UploadTask uploadTask = FirebaseStorage.instance.ref('uploads/$fileName')
+          .putFile(file);
       TaskSnapshot taskSnapshot = await uploadTask;
 
       String downloadUrl = await taskSnapshot.ref.getDownloadURL();
@@ -361,17 +381,20 @@ class _ArCubeState extends State<ArCube> {
         video: pickedFile.path,
         imageFormat: ImageFormat.JPEG,
         maxHeight: 1000, // Set high resolution
-        quality: 100,    // Set high quality
+        quality: 100, // Set high quality
       );
 
       if (thumbnailBytes != null) {
-        final File thumbnailFile = File(thumbnailPath)..writeAsBytesSync(thumbnailBytes);
+        final File thumbnailFile = File(thumbnailPath)
+          ..writeAsBytesSync(thumbnailBytes);
 
         // Upload thumbnail to Firebase Storage
         String thumbnailFileName = uuid.v4();
-        UploadTask thumbnailUploadTask = FirebaseStorage.instance.ref('thumbnails/$thumbnailFileName').putFile(thumbnailFile);
+        UploadTask thumbnailUploadTask = FirebaseStorage.instance.ref(
+            'thumbnails/$thumbnailFileName').putFile(thumbnailFile);
         TaskSnapshot thumbnailTaskSnapshot = await thumbnailUploadTask;
-        String thumbnailDownloadUrl = await thumbnailTaskSnapshot.ref.getDownloadURL();
+        String thumbnailDownloadUrl = await thumbnailTaskSnapshot.ref
+            .getDownloadURL();
 
         parentSetState(() {
           textImageURL = thumbnailDownloadUrl;
@@ -404,14 +427,16 @@ class _ArCubeState extends State<ArCube> {
   }
 
   Future<void> _uploadFile(StateSetter setState) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.video);
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.video);
 
     if (result != null && result.files.single.path != null) {
       File file = File(result.files.single.path!);
       String fileName = uuid.v4();
 
       try {
-        UploadTask uploadTask = FirebaseStorage.instance.ref('uploads/$fileName').putFile(file);
+        UploadTask uploadTask = FirebaseStorage.instance.ref(
+            'uploads/$fileName').putFile(file);
         TaskSnapshot taskSnapshot = await uploadTask;
 
         String downloadUrl = await taskSnapshot.ref.getDownloadURL();
@@ -429,16 +454,19 @@ class _ArCubeState extends State<ArCube> {
           video: result.files.single.path!,
           imageFormat: ImageFormat.JPEG,
           maxHeight: 1000, // Set high resolution
-          quality: 100,    // Set high quality
+          quality: 100, // Set high quality
         );
 
         if (thumbnailBytes != null) {
-          final File thumbnailFile = File(thumbnailPath)..writeAsBytesSync(thumbnailBytes);
+          final File thumbnailFile = File(thumbnailPath)
+            ..writeAsBytesSync(thumbnailBytes);
           // Upload thumbnail to Firebase Storage
           String thumbnailFileName = uuid.v4();
-          UploadTask thumbnailUploadTask = FirebaseStorage.instance.ref('thumbnails/$thumbnailFileName').putFile(thumbnailFile);
+          UploadTask thumbnailUploadTask = FirebaseStorage.instance.ref(
+              'thumbnails/$thumbnailFileName').putFile(thumbnailFile);
           TaskSnapshot thumbnailTaskSnapshot = await thumbnailUploadTask;
-          String thumbnailDownloadUrl = await thumbnailTaskSnapshot.ref.getDownloadURL();
+          String thumbnailDownloadUrl = await thumbnailTaskSnapshot.ref
+              .getDownloadURL();
 
           setState(() {
             textImageURL = thumbnailDownloadUrl;
@@ -478,6 +506,7 @@ class _ArCubeState extends State<ArCube> {
       );
     }
   }
+
   void _showThumbnailDialog(StateSetter parentSetState) {
     final TextEditingController thumbnailController = TextEditingController();
     showDialog(
@@ -490,7 +519,8 @@ class _ArCubeState extends State<ArCube> {
             children: [
               TextField(
                 controller: thumbnailController,
-                decoration: const InputDecoration(hintText: "Enter Description"),
+                decoration: const InputDecoration(
+                    hintText: "Enter Description"),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -529,11 +559,18 @@ class _ArCubeState extends State<ArCube> {
 
   void _placeCube(ArCoreHitTestResult hit) async {
     final hitTransform = hit.pose.translation;
+    final hitRotation = hit.pose.rotation;
     final cubePosition = vector64.Vector3(
       hitTransform.x,
       hitTransform.y + 0.25,
       hitTransform.z,
     );
+    final cubeRotation = vector64.Vector4(
+
+        hitRotation.x,
+        hitRotation.y,
+        hitRotation.z,
+        hitRotation.w);
 
     final response = await http.get(Uri.parse(textImageURL!));
     final bytes = response.bodyBytes;
@@ -552,13 +589,15 @@ class _ArCubeState extends State<ArCube> {
       shape: cube,
       degreesPerSecond: 30,
       position: cubePosition,
+      rotation: cubeRotation,
       name: uuid.v4(),
     );
-
     coreController!.onNodeTap = _onArCoreNodeTap;
     coreController!.addArCoreNode(node);
-    await _saveCubePosition(cubePosition);
-
+    print('pose : ${hit.pose}');
+    print('Trans : ${hit.pose.translation}');
+    print('Trans : ${hit.pose.rotation}');
+    await _saveCubePosition(cubePosition, cubeRotation);
     Fluttertoast.showToast(
       msg: 'Cube placed Successfully',
       toastLength: Toast.LENGTH_SHORT,
@@ -573,7 +612,9 @@ class _ArCubeState extends State<ArCube> {
     if (planeTransform != null) {
       setState(() {
         planeCoordinates =
-        'Plane Coordinates: (${planeTransform.x.toStringAsFixed(2)}, ${planeTransform.y.toStringAsFixed(2)}, ${planeTransform.z.toStringAsFixed(2)})';
+        'Plane Coordinates: (${planeTransform.x.toStringAsFixed(
+            2)}, ${planeTransform.y.toStringAsFixed(2)}, ${planeTransform.z
+            .toStringAsFixed(2)})';
       });
     }
   }
@@ -588,47 +629,50 @@ class _ArCubeState extends State<ArCube> {
     );
   }
 
-  Future<void> _saveCubePosition(vector64.Vector3 position) async {
+  Future<void> _saveCubePosition(vector64.Vector3 position, vector64.Vector4 rotation) async {
     final currentPosition = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.best,
     );
+
 
     final cubePositionMap = {
       'x': position.x,
       'y': position.y,
       'z': position.z,
     };
+    final cubeRotationMap = {
+      'a' : rotation.x,
+      'b' : rotation.y,
+      'c' : rotation.z,
+      'd' : rotation.w,
+    };
 
     final latitude = currentPosition.latitude;
     final longitude = currentPosition.longitude;
-    const latScale = 0.00001;
-    const lonScale = 0.00001;
-    final cubeLatitude = latitude + position.x * latScale;
-    final cubeLongitude = longitude + position.z * lonScale;
-
+    const double earthRadius = 6378137.0;
+    double deltaLatitude = (position.z / earthRadius) * (180 / 3.14159);
+    double deltaLongitude = (position.x / (earthRadius * cos(3.14159 * latitude / 180))) * (180 / 3.14159);
+    double cubeLatitude = latitude + deltaLatitude;
+    double cubeLongitude = longitude + deltaLongitude;
     final roundedCubeLatitude = _roundToDecimalPlaces(cubeLatitude, 7);
     final roundedCubeLongitude = _roundToDecimalPlaces(cubeLongitude, 7);
-
     final uniqueId = uuid.v4();
-    // final DateTime cubeDate = DateTime.now();
 
     try {
-
       await FirebaseFirestore.instance.collection('cubes').doc(uniqueId).set({
         'CubeLatitude': roundedCubeLatitude,
         'CubeLongitude': roundedCubeLongitude,
         'PhoneLatitude': latitude,
         'PhoneLongitude': longitude,
         'CubeVectorPosition': cubePositionMap,
+        'CubeVectorRotation': cubeRotationMap,
         'UploadedFilePath': uploadedFileUrl,
-        'description': thumbnailText,
+        // 'description': thumbnailText,
         'UniqueId': uniqueId,
         'thumbImage': textImageURL,
         'timestamp': FieldValue.serverTimestamp(), // Use server timestamp
       });
-
       documentId = uniqueId;
-
       Fluttertoast.showToast(
         msg: 'Position saved successfully with ID: $documentId',
         toastLength: Toast.LENGTH_SHORT,
@@ -638,7 +682,7 @@ class _ArCubeState extends State<ArCube> {
       );
     } catch (error) {
       Fluttertoast.showToast(
-        msg: 'Failed to save position: $error',
+        msg: 'Failed to save posit ion: $error',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
@@ -673,7 +717,8 @@ class _ArCubeState extends State<ArCube> {
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 planeCoordinates,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
         ],
@@ -681,3 +726,4 @@ class _ArCubeState extends State<ArCube> {
     );
   }
 }
+

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "353007631711",
-    "project_id": "arflutter-7cc57",
-    "storage_bucket": "arflutter-7cc57.appspot.com"
+    "project_number": "649268462393",
+    "project_id": "gptar-97c25",
+    "storage_bucket": "gptar-97c25.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:353007631711:android:bbb72bc04bc6770bb70aea",
+        "mobilesdk_app_id": "1:649268462393:android:ea0b293f76b54c09f55ee8",
         "android_client_info": {
           "package_name": "com.example.gptar"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDarfEkzRBFrGvGsg4Liq_2IUt9GirctSw"
+          "current_key": "AIzaSyDnplXfHe4gUTuZfhznZJ3U6hgdD6acrWQ"
         }
       ],
       "services": {
