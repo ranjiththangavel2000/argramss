@@ -543,17 +543,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
@@ -577,6 +566,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
   double currentLatitude = 0.0;
   double currentLongitude = 0.0;
   double? distanceCal;
+  double? bearing;
   double cubeDirLat = 0.0;
   double cubeDirLon = 0.0;
   double phoneLat = 0.0;
@@ -599,13 +589,13 @@ class _FirestoreTestState extends State<FirestoreTest> {
   @override
   void initState() {
     super.initState();
-    _getLocation();
     _timer = Timer.periodic(Duration(milliseconds: 200), (timer) {
       _getLocation();
     });
-    _nodeTapTimer = Timer.periodic(Duration(seconds: 3), (timer) {
+    _nodeTapTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       count = 0;
     });
+
   }
 
   @override
@@ -625,6 +615,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
         currentLatitude = position.latitude;
         currentLongitude = position.longitude;
       });
+
     } catch (e) {
       print("Error: $e");
     }
@@ -648,10 +639,26 @@ class _FirestoreTestState extends State<FirestoreTest> {
     return earthRadius * c;
   }
 
+
   double _degreesToRadians(double degrees) {
     return degrees * pi / 180;
   }
 
+  double calculateBearing(double lat1, double lon1, double lat2, double lon2) {
+    double phi1 = _degreesToRadians(lat1);
+    double phi2 = _degreesToRadians(lat2);
+    double deltaLambda = _degreesToRadians(lon2 - lon1);
+
+    double y = sin(deltaLambda) * cos(phi2);
+    double x = cos(phi1) * sin(phi2) - sin(phi1) * cos(phi2) * cos(deltaLambda);
+    bearing = atan2(y, x);
+
+    // Convert from radians to degrees
+    return _radiansToDegrees(bearing!);
+  }
+  double _radiansToDegrees(double radians) {
+    return radians * 180 / pi;
+  }
   double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double radiusOfEarthKm = 6371.0;
     // Convert degrees to radians
@@ -738,24 +745,28 @@ class _FirestoreTestState extends State<FirestoreTest> {
         double phoneLon = currentPosition.longitude;
         String cubeID = documentSnapshot.id;
         String thumb = data['thumbImage'];
-        String cubeDesc = data['Description'];
+        // String cubeDesc = data['Description'];
         double distance = _calculateDistance(phoneLat, phoneLon, cubeLat, cubeLon);
+        calculateBearing(phoneLat, phoneLon, cubeLat, cubeLon);
+
         double radius = 8;
 
         // Check if the cube is already placed
-        if (distance <= radius) {
+        if (distance <= radius ) {
 
           double deltaLatitude = cubeLat - phoneLat;
           double deltaLongitude = cubeLon - phoneLon;
           double z = deltaLatitude * (3.14159 / 180) * earthRadius;
           double x = deltaLongitude * (3.14159 / 180) * earthRadius * cos(3.14159 * phoneLat / 180);
           Fluttertoast.showToast(
-            msg: 'x : $x y : $y z : $z',
+            msg: 'Distance to cube: ${distanceCal?.toStringAsFixed(2)} meters\nBearing to cube: ${calculateBearing(phoneLat, phoneLon, cubeLat, cubeLon).toStringAsFixed(2)} degrees',
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
             backgroundColor: Colors.red,
             textColor: Colors.white,
           );
+          print('Bearing to cube: $bearing degrees');
+
           final response = await http.get(Uri.parse(thumb));
           if (response.statusCode == 200) {
             final bytes = response.bodyBytes;
@@ -784,7 +795,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
             coreController!.onNodeTap = _onArCoreNodeTap;
             CubeImageURLs.add(thumb);
             CubeIdUrl.add(cubeID);
-             cubeDes.add(cubeDesc);
+             // cubeDes.add(cubeDesc);
             await _saveCubePosition(x, y, z, phoneLat, phoneLon, cubeID);
             // Retrieve cubeId URL from Firestore based on cubeID
           }else {
@@ -989,7 +1000,8 @@ class _FirestoreTestState extends State<FirestoreTest> {
                                 ),
                               if(hi)
                                 Text(
-                                  distanceCal.toString(),
+                                  'Distance: ${distanceCal?.toStringAsFixed(2)} meters\n'
+                                      'Bearing: ${bearing?.toStringAsFixed(2)} degrees',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
