@@ -726,4 +726,3 @@ class _ArCubeState extends State<ArCube> {
     );
   }
 }
-
