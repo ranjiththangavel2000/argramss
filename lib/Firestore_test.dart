@@ -2099,6 +2099,9 @@ class _FirestoreTestState extends State<FirestoreTest> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Cube Placement"),
+        backgroundColor: Colors.pink,
+
+        centerTitle: true,
       ),
       body: Column(
         children: [
