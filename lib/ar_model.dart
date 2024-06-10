@@ -1156,7 +1156,6 @@ class _ArCubeState extends State<ArCube> {
           content: const Text("Do you want to upload the recorded video?"),
           actions: [
             TextButton(
-
               onPressed: () {
                 Navigator.of(context).pop();
                 Fluttertoast.showToast(

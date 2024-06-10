@@ -1917,7 +1917,9 @@ class _FirestoreTestState extends State<FirestoreTest> {
         }
 
         var cubeMap = data['CubeVectorPosition'];
+        // double y = cubeMap['y']?.toDouble() + 0.25 ?? 0.0;
         double y = cubeMap['y']?.toDouble() + 0.25 ?? 0.0;
+
         var cubeRot = data['CubeVectorPosition'];
         double a = cubeRot['a']?.toDouble() ?? 0.0;
         double b = cubeRot['b']?.toDouble() ?? 0.0;
