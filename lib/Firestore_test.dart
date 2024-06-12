@@ -9,36 +9,32 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'cube_video.dart';
-
 class FirestoreTest extends StatefulWidget {
   @override
   _FirestoreTestState createState() => _FirestoreTestState();
 }
-
 class _FirestoreTestState extends State<FirestoreTest> {
   ArCoreController? coreController;
   String planeCoordinates = '';
   double currentLatitude = 0.0;
   double currentLongitude = 0.0;
-  double? distanceCal;
-  double cubeDirLat = 0.0;
-  double cubeDirLon = 0.0;
+  String distanceCal = '';
   double phoneLat = 0.0;
   double phoneLon = 0.0;
-  double cubeDirLatitude = 0.0;
-  double cubeDirLongitude = 0.0;
+  DateTime? selectedDate;
   bool hi = false;
   bool imgId = true;
   late Timer _timer;
   late Timer _nodeTapTimer;
-  bool isCubesNearYouVisible = false;
-  late Timer _distanceMeters;
   int count = 0;
-  static const double earthRadius = 6378137.0;
+  bool isCubesNearYouVisible = false;
   List<String> CubeImageURLs = [];
   List<String> CubeIdUrl = [];
   List<String> cubeDes = [];
+  List<ArCoreNode> _addedNodes = [];
   DateTime? mydate;
+  int currentCubePage = 0;
+  bool isNextButtonVisible = false;
 
 
   @override
@@ -47,7 +43,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
     _getLocation();
     _timer = Timer.periodic(Duration(milliseconds: 200), (timer) {
       _getLocation();
-   });
+    });
     _nodeTapTimer = Timer.periodic(Duration(seconds: 3), (timer) {
       count = 0;
     });
@@ -57,7 +53,6 @@ class _FirestoreTestState extends State<FirestoreTest> {
   void dispose() {
     _timer.cancel();
     _nodeTapTimer.cancel();
-    _distanceMeters.cancel();
     super.dispose();
   }
 
@@ -69,12 +64,10 @@ class _FirestoreTestState extends State<FirestoreTest> {
       setState(() {
         currentLatitude = position.latitude;
         currentLongitude = position.longitude;
-
       });
     } catch (e) {
       print("Error: $e");
     }
-
   }
 
   void cubeCreate(ArCoreController controller) {
@@ -82,9 +75,8 @@ class _FirestoreTestState extends State<FirestoreTest> {
     coreController!.onPlaneDetected = null;
   }
 
-
-
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(double lat1, double lon1, double lat2,
+      double lon2) {
     const double earthRadius = 6371e3;
     double dLat = _degreesToRadians(lat2 - lat1);
     double dLon = _degreesToRadians(lon2 - lon1);
@@ -99,31 +91,11 @@ class _FirestoreTestState extends State<FirestoreTest> {
     return degrees * pi / 180;
   }
 
-  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double radiusOfEarthKm = 6371.0;
-    // Convert degrees to radians
-    double toRadians(double degree) {
-      return degree * pi / 180;
-    }
-    double lat1Rad = toRadians(lat1);
-    double lon1Rad = toRadians(lon1);
-    double lat2Rad = toRadians(lat2);
-    double lon2Rad = toRadians(lon2);
-    // Haversine formula
-    double deltaLat = lat2Rad - lat1Rad;
-    double deltaLon = lon2Rad - lon1Rad;
-    double a = sin(deltaLat / 2) * sin(deltaLat / 2) +
-        cos(lat1Rad) * cos(lat2Rad) *
-            sin(deltaLon / 2) * sin(deltaLon / 2);
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    double distanceKm = radiusOfEarthKm * c;
-    double distanceMeters = distanceKm * 1000;
-    return distanceMeters;
-  }
-
   Future<void> _cubePlace(DateTime selectedDate) async {
-    const double radius = 3.0; // 3 meters range
-    const double cubeHeight = 0.25; // Adjust y position as needed
+    const double cubeHeight = 0.25;
+    const double radius = 20.0;
+    const double distanceInFront = 2.0;
+    const int cubesPerPage = 4;
 
     if (coreController == null) {
       Fluttertoast.showToast(
@@ -143,10 +115,8 @@ class _FirestoreTestState extends State<FirestoreTest> {
         desiredAccuracy: LocationAccuracy.best,
       );
 
-      // Convert selectedDate to the start and end of the day
       DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
       DateTime endOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
-      // Convert DateTime to Timestamp
       Timestamp startTimestamp = Timestamp.fromDate(startOfDay);
       Timestamp endTimestamp = Timestamp.fromDate(endOfDay);
 
@@ -166,9 +136,10 @@ class _FirestoreTestState extends State<FirestoreTest> {
         );
         return;
       }
-
+      _removeAllCubes();
       int cubeCount = 0;
-      for (QueryDocumentSnapshot documentSnapshot in querySnapshot.docs) {
+      for (int i = currentCubePage * cubesPerPage; i < querySnapshot.docs.length && i < (currentCubePage + 1) * cubesPerPage; i++) {
+        QueryDocumentSnapshot documentSnapshot = querySnapshot.docs[i];
         var data = documentSnapshot.data() as Map<String, dynamic>?;
         if (data == null) {
           Fluttertoast.showToast(
@@ -184,44 +155,38 @@ class _FirestoreTestState extends State<FirestoreTest> {
         var cubeMap = data['CubeVectorPosition'];
         double y = cubeMap['y']?.toDouble() + cubeHeight ?? cubeHeight;
 
-        var cubeRot = data['CubeVectorPosition'];
-        double a = cubeRot['a']?.toDouble() ?? 0.0;
-        double b = cubeRot['b']?.toDouble() ?? 0.0;
-        double c = cubeRot['c']?.toDouble() ?? 0.0;
-        double d = cubeRot['d']?.toDouble() ?? 0.0;
-        print('a : $a b : $b c : $c d : $d ');
-
-        double cubeLat = data['CubeLatitude'];
-        double cubeLon = data['CubeLongitude'];
+        double cubeLat = data['PhoneLatitude'];
+        double cubeLon = data['PhoneLongitude'];
         double phoneLat = currentPosition.latitude;
         double phoneLon = currentPosition.longitude;
         String cubeID = documentSnapshot.id;
         String thumb = data['thumbImage'];
         double distance = _calculateDistance(phoneLat, phoneLon, cubeLat, cubeLon);
 
+        const double distanceBetweenCubes = 2.5;
+
         if (distance <= radius) {
-          // Calculate position in a circular manner
-          double angle = (cubeCount * 2 * pi) / querySnapshot.docs.length;
-          double x = radius * cos(angle);
-          double z = radius * sin(angle);
+          double x = 0.0;
+          double z = -(cubeCount * distanceBetweenCubes + distanceInFront);
           cubeCount++;
 
           final response = await http.get(Uri.parse(thumb));
           if (response.statusCode == 200) {
             final bytes = response.bodyBytes;
-            final materials = ArCoreMaterial(color: Colors.red, metallic: 0.5, textureBytes: bytes);
+            final materials = ArCoreMaterial(
+                color: Colors.red, metallic: 0.5, textureBytes: bytes);
             final cube = ArCoreCube(
-              size: vector64.Vector3(0.3, 0.5, 0.35),
+              size: vector64.Vector3(0.3, 0.6, 0.35),
               materials: [materials],
             );
             final node = ArCoreRotatingNode(
               shape: cube,
               degreesPerSecond: 30,
               position: vector64.Vector3(x, y, z),
-              rotation: vector64.Vector4(a, 1, c, 90),
               name: cubeID,
             );
             coreController!.addArCoreNode(node);
+            _addedNodes.add(node);
 
             Fluttertoast.showToast(
               msg: 'Cube Placed',
@@ -235,6 +200,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
             CubeImageURLs.add(thumb);
             CubeIdUrl.add(cubeID);
             await _saveCubePosition(x, y, z, currentLatitude, currentLongitude, documentSnapshot.id);
+
           } else {
             Fluttertoast.showToast(
               msg: 'Failed to load image from URL: ${response.statusCode}',
@@ -254,6 +220,9 @@ class _FirestoreTestState extends State<FirestoreTest> {
           );
         }
       }
+      setState(() {
+        isNextButtonVisible = querySnapshot.docs.length > (currentCubePage + 1) * cubesPerPage;
+      });
     } catch (error) {
       Fluttertoast.showToast(
         msg: 'Failed to place cube: $error',
@@ -265,7 +234,18 @@ class _FirestoreTestState extends State<FirestoreTest> {
     }
   }
 
+  void _onNextPage() {
+    setState(() {
+      currentCubePage++;
+      _removeAllCubes(); // Clear previous nodes before placing new ones
+      CubeImageURLs.clear(); // Clear the images list
+      CubeIdUrl.clear(); // Clear the IDs list
+      _cubePlace(selectedDate!);
+    });
+  }
+
   Future<void> _saveCubePosition(double x, double y, double z, double phoneLat, double phoneLon, String cubeID) async {
+
     DocumentReference ref = await FirebaseFirestore.instance.collection('cube_locations_placed').add({
       'x': x,
       'y': y,
@@ -274,6 +254,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
       'phoneLon': phoneLon,
       'cubeID': cubeID,
     });
+
     Fluttertoast.showToast(
       msg: 'Cube position saved to Firestore with ID: ${ref.id}',
       toastLength: Toast.LENGTH_SHORT,
@@ -282,19 +263,18 @@ class _FirestoreTestState extends State<FirestoreTest> {
       textColor: Colors.white,
     );
   }
-  void _onArCoreNodeTap(String name) async{
 
+  void _onArCoreNodeTap(String name) async {
     String nodeName = name;
-    if(nodeName == name && count == 1)
-    {
+    if (nodeName == name && count == 1) {
       print('IF part');
     } else {
-
       print('Else Part');
 
       try {
         count += 1;
-        DocumentSnapshot documents = await FirebaseFirestore.instance.collection('cubes').doc(name).get();
+        DocumentSnapshot documents = await FirebaseFirestore.instance
+            .collection('cubes').doc(name).get();
         String nodeVideoUrl = documents['UploadedFilePath'];
         print('nodeVideo : $nodeVideoUrl');
         Navigator.push(
@@ -304,7 +284,7 @@ class _FirestoreTestState extends State<FirestoreTest> {
           ),
         );
       }
-      catch(error){
+      catch (error) {
         Fluttertoast.showToast(
           msg: 'error : $error',
           toastLength: Toast.LENGTH_SHORT,
@@ -316,49 +296,60 @@ class _FirestoreTestState extends State<FirestoreTest> {
     }
   }
 
-  void distanceMeters(double cubeDirsLat, double cubeDirsLon, double q) async{
-    Position currentPositionDis = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.best,
-    );
-    _distanceMeters =  Timer.periodic(Duration(milliseconds: 700), (Timer timer) {
-      setState(() {
-        double deltaLatitude = cubeDirsLat - currentPositionDis.latitude;
-        double deltaLongitude = cubeDirsLon - currentPositionDis.longitude;
-        double r = deltaLatitude * (3.14159 / 180) * earthRadius;
-        double p = deltaLongitude * (3.14159 / 180) * earthRadius * cos(3.14159 * currentPositionDis.latitude / 180);
-        vector64.Vector3 currentPose = vector64.Vector3(0, 0, 0);
-        vector64.Vector3 cubePose = vector64.Vector3(p, q, r);
-        distanceCal = currentPose.distanceTo(cubePose);
-        print('lat  : ${currentPositionDis.latitude} lon : ${currentPositionDis.longitude}');
-        print('p : $p f : $q r : $r');
-        print('distanceCal : $distanceCal');
-      });
-    });
+  void _onCubeImageTap(String cubeIds) async {
+    imgId = false;
+    hi = true;
+    String cubeDocId = cubeIds;
+    DocumentSnapshot documents = await FirebaseFirestore.instance.collection('cubes').doc(cubeDocId).get();
+    if (documents['description'] == null) {
+      distanceCal = 'Hi welcome to AR gram';
+    } else {
+      distanceCal = documents['description'];
+    }
   }
-  // void _back(){
-  //   setState(() {
-  //     imgId = true;
-  //     hi = false;
-  //   });
-  // }
+
   Future<DateTime?> _showDatePicker(BuildContext context) async {
     return showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime(2100),
+      firstDate: DateTime(0001),
+      lastDate: DateTime(9999),
     );
   }
 
+  void _removeAllCubes() {
+    if (coreController != null) {
+      for (ArCoreNode node in _addedNodes) {
+        coreController!.removeNode(nodeName: node.name);
+      }
+      _addedNodes.clear();
+    }
+  }
+
+  void _onGetCubesNearMe() async {
+    if (selectedDate != null) {
+      setState(() {
+        // Clear previous cubes from the list and AR scene
+        CubeImageURLs.clear();
+        CubeIdUrl.clear();
+        _removeAllCubes();
+      });
+      await _cubePlace(selectedDate!);
+    }
+  }
+
+  void _back() {
+    setState(() {
+      imgId = true;
+      hi = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Cube Placement"),
-        backgroundColor: Colors.pink,
-
-        centerTitle: true,
       ),
       body: Column(
         children: [
@@ -369,8 +360,6 @@ class _FirestoreTestState extends State<FirestoreTest> {
               style: TextStyle(fontSize: 16),
             ),
           ),
-
-
           // ARCore view
           Expanded(
             child: Stack(
@@ -380,44 +369,176 @@ class _FirestoreTestState extends State<FirestoreTest> {
                   enablePlaneRenderer: true,
                   enableTapRecognizer: true,
                   enableUpdateListener: true,
-
                 ),
+                if (CubeImageURLs.isNotEmpty)
+                // Only display the container if there are cubes retrieved
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.5),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (imgId)
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                "Cubes Near You",
+                                style: TextStyle(color: Colors.white),
+                                textAlign: TextAlign.center,
+                              ),
+                             ),
+                          Container(
+                            height: 155,
+                            child: Column(
+                              children: [
+                                if (hi)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        left: 270.0, top: 8.0, bottom: 8.0),
+                                    child: FloatingActionButton(
+                                      onPressed: _back,
+                                      child: Icon(Icons.arrow_back),
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.black,
+                                      elevation: 4,
+                                      mini: true,
+                                    ),
+                                  ),
+                                if (hi)
+                                  Text(
+                                    distanceCal.toString(),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: CubeImageURLs.length,
+                                    itemBuilder: (context, index) {
+                                      if (imgId && index < 10)
+                                        return Padding(
+                                          padding:
+                                          const EdgeInsets.fromLTRB(5, 5, 5, 7),
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              _onCubeImageTap(CubeIdUrl[index]);
+                                            },
+                                            child: Container(
+                                              width: 60,
+                                              height: 50,
+                                              child: Column(
+                                                children: [
+                                                  ClipRRect(
+                                                    borderRadius:
+                                                    BorderRadius.circular(8),
+                                                    child: Image.network(
+                                                      CubeImageURLs[index],
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 5),
+                                                  Text(
+                                                    'RandomWalk AI',
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                if (CubeImageURLs.length > 10 && imgId)
+                                  ElevatedButton(
+                                    onPressed: _onNextPage,
+                                    child: Text("Next"),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 30, 10, 10),
-            child:Column(
-              children: [
-                Container(
-                  width: 100,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      DateTime? pickedDate = await _showDatePicker(context);
-                      if (pickedDate != null) {
-                        await _cubePlace(pickedDate);
-                        setState(() {
-                          mydate=pickedDate;
-                        });
-                      }
-                    },
-                    child: Text("Get Cubes"),
-                    style: ButtonStyle(
-                      padding: WidgetStatePropertyAll(EdgeInsets.all(0)),
-                    ),
+            padding: const EdgeInsets.fromLTRB(10, 5, 10, 10),
+            child: Container(
+              width: 300,
+              height: 100,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () async {
+                          DateTime? pickedDate = await _showDatePicker(context);
+                          if (pickedDate != null) {
+                            setState(() {
+                              selectedDate = pickedDate;
+                            });
+                          }
+                        },
+                        child: Text("Select Date"),
+                      ),
+                      if (selectedDate != null)
+                      // Display the selected date
+                        Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: Text(
+                            ' ${selectedDate!.toLocal()
+                                .toIso8601String()
+                                .substring(0, 10)}',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: Text(
-                    mydate!=null?'Picked Date: ${mydate.toString()}':'No Date Picked',
-                    style: TextStyle(
-                      fontWeight:FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          if (selectedDate == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Please select a date first'),
+                              ),
+                            );
+                          } else {
+                            _onGetCubesNearMe();
+                          }
+                        },
+                        child: Text('GET CUBES NEAR ME'),
+                      ),
+                      SizedBox(width: 10),
+                      if (isNextButtonVisible)
+                        ElevatedButton(
+                          onPressed: _onNextPage,
+                          child: Text('NEXT'),
+                        ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -425,3 +546,13 @@ class _FirestoreTestState extends State<FirestoreTest> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
