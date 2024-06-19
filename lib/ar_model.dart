@@ -24,6 +24,7 @@ class ArCube extends StatefulWidget {
   @override
   State<ArCube> createState() => _ArCubeState();
 }
+
 class _ArCubeState extends State<ArCube> {
   ArCoreController? coreController;
   String planeCoordinates = '';
@@ -201,7 +202,7 @@ class _ArCubeState extends State<ArCube> {
       textureBytes: bytes,
     );
     final cube = ArCoreCube(
-      size: vector64.Vector3(0.5, 0.5, 0.5),
+      size: vector64.Vector3(0.3, 0.6, 0.35),
       materials: [materials],
     );
     final node = ArCoreRotatingNode(
@@ -211,6 +212,7 @@ class _ArCubeState extends State<ArCube> {
       name: uuid.v4(),
     );
     coreController!.onNodeTap = _onArCoreNodeTap;
+
     coreController!.addArCoreNode(node);
     double distance = curPose.distanceTo(cubePosition);
     double currentHeading = 0.0;
@@ -250,6 +252,7 @@ class _ArCubeState extends State<ArCube> {
       );
     }
   }
+
   void _previewRecordedVideo(XFile pickedFile, StateSetter parentSetState) {
     final VideoPlayerController videoPlayerController = VideoPlayerController.file(File(pickedFile.path));
     showDialog(
@@ -358,6 +361,7 @@ class _ArCubeState extends State<ArCube> {
       },
     );
   }
+
   void _showUploadVideoDialog(XFile pickedFile, StateSetter parentSetState) {
     showDialog(
       context: context,
@@ -391,6 +395,7 @@ class _ArCubeState extends State<ArCube> {
       },
     );
   }
+
   Future<void> _uploadFile(StateSetter setState) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.video);
     if (result != null && result.files.single.path != null) {
@@ -420,6 +425,7 @@ class _ArCubeState extends State<ArCube> {
           uploadCompleted = true;
           uploadProgress = 0.0; // Reset progress after completion
         });
+
         // Extract high-quality frame from video
         final Directory tempDir = await getTemporaryDirectory();
         final String thumbnailPath = '${tempDir.path}/thumb.jpg';
@@ -466,6 +472,7 @@ class _ArCubeState extends State<ArCube> {
       );
     }
   }
+
   Future<void> _uploadRecordedVideo(XFile pickedFile, StateSetter parentSetState) async {
     File file = File(pickedFile.path);
     String fileName = uuid.v4();
@@ -578,6 +585,7 @@ class _ArCubeState extends State<ArCube> {
       },
     );
   }
+
   void _onArCoreNodeTap(String name) {
     // Navigate to CubeVideoScreen when cube tapped
     Navigator.push(
@@ -587,6 +595,7 @@ class _ArCubeState extends State<ArCube> {
       ),
     );
   }
+
   Future<void> _saveCubePosition(vector64.Vector3 position, double currentHeading, double distance, double newLatitude, double newLongitude, double currentLat, double currentLon) async {
     final uniqueId = uuid.v4();
     try {
@@ -619,10 +628,12 @@ class _ArCubeState extends State<ArCube> {
       );
     }
   }
+
   double _roundToDecimalPlaces(double value, int decimalPlaces) {
     final mod = math.pow(10.0, decimalPlaces).toDouble();
     return ((value * mod).round().toDouble() / mod);
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -652,3 +663,4 @@ class _ArCubeState extends State<ArCube> {
     );
   }
 }
+

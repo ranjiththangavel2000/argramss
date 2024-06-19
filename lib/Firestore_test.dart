@@ -245,7 +245,6 @@ class _FirestoreTestState extends State<FirestoreTest> {
   }
 
   Future<void> _saveCubePosition(double x, double y, double z, double phoneLat, double phoneLon, String cubeID) async {
-
     DocumentReference ref = await FirebaseFirestore.instance.collection('cube_locations_placed').add({
       'x': x,
       'y': y,
