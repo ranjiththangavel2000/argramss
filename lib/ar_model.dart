@@ -18,7 +18,6 @@ import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'cube_video.dart';
-
 class ArCube extends StatefulWidget {
   const ArCube({Key? key}) : super(key: key);
   @override
@@ -139,12 +138,13 @@ class _ArCubeState extends State<ArCube> {
                       onPressed: uploadCompleted && thumbnailAdded
                           ? () {
                         Navigator.of(context).pop();
-                        _placeCubeWithoutPlane();
+                        // _placeCubeWithoutPlane();
+                        _showShapeOptionsDialog();
                       }
                           : null,
                       icon: const FaIcon(FontAwesomeIcons.cube, color: Colors.white),
                       label: const Text(
-                        "Place Cube",
+                        "Place",
                         style: TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -188,6 +188,198 @@ class _ArCubeState extends State<ArCube> {
         );
       },
     );
+  }
+  void _showShapeOptionsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Choose a shape"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  _placeCubeWithoutPlane();
+                  Navigator.of(context).pop();
+                },
+                child: const Text("Place Cube"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _placeSphere();
+                  Navigator.of(context).pop();
+                },
+                child: const Text("Place Sphere"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _placeCylinder();
+                  Navigator.of(context).pop();
+                },
+                child: const Text("Place Cylinder"),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _placeCylinder() async {
+    final currentPositionDir = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.best,
+    );
+    final cylinderPosition = vector64.Vector3(0.0, -0.50, -1.0);
+    final response = await http.get(Uri.parse(textImageURL!));
+    final bytes = response.bodyBytes;
+    final materials = ArCoreMaterial(
+      color: Colors.red,
+      metallic: 1.0,
+      textureBytes: bytes,
+
+    );
+    final cylinder = ArCoreCylinder(
+      materials: [materials],
+      radius: 0.5,
+      height: 1.0,  // Adjust the height as needed
+    );
+    final node = ArCoreRotatingNode(
+      shape: cylinder,
+      position: cylinderPosition,
+        degreesPerSecond: 30,
+      name: uuid.v4(),
+    );
+    coreController!.onNodeTap = _onArCoreNodeTap;
+
+    coreController!.addArCoreNode(node);
+    double distance = curPose.distanceTo(cylinderPosition);
+    double currentHeading = 0.0; // Assuming a default heading
+    double currentLat = currentPositionDir.latitude;
+    double currentLon = currentPositionDir.longitude;
+    final earthRadiusKilometers = 6371;
+    final earthRadiusMeters = earthRadiusKilometers * 1000;
+    final distanceInRadians = distance / earthRadiusMeters;
+    final changeInLatitude = distanceInRadians * cos(currentHeading);
+    final changeInLongitude = distanceInRadians * sin(currentHeading);
+    double newLatitude = _roundToDecimalPlaces(currentLat + changeInLatitude, 7);
+    double newLongitude = _roundToDecimalPlaces(currentLon + changeInLongitude, 7);
+    await _saveCylinderPosition(cylinderPosition, currentHeading, distance, newLatitude, newLongitude, currentLat, currentLon);
+    Fluttertoast.showToast(
+      msg: 'Cylinder placed Successfully',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
+    );
+  }
+
+  Future<void> _saveCylinderPosition(vector64.Vector3 position, double currentHeading, double distance, double newLatitude, double newLongitude, double currentLat, double currentLon) async {
+    final uniqueId = uuid.v4();
+    try {
+      await FirebaseFirestore.instance.collection('cylinders').doc(uniqueId).set({
+        'CylinderLatitude': newLatitude,
+        'CylinderLongitude': newLongitude,
+        'PhoneLatitude': currentLat,
+        'PhoneLongitude': currentLon,
+        'radius': 0.2, // Store the radius for reference
+        'height': 0.5, // Store the height for reference
+        'timestamp': FieldValue.serverTimestamp(), // Use server timestamp
+      });
+      documentId = uniqueId;
+      Fluttertoast.showToast(
+        msg: 'Position saved successfully with ID: $documentId',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
+    } catch (error) {
+      Fluttertoast.showToast(
+        msg: 'Failed to save cylinder position: $error',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
+  }
+
+  void _placeSphere() async {
+    final currentPositionDir = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.best,
+    );
+    final spherePosition = vector64.Vector3(0.0, -0.50, -2.0);
+    final response = await http.get(Uri.parse(textImageURL!));
+    final bytes = response.bodyBytes;
+    final materials = ArCoreMaterial(
+      color: Colors.blue,
+      metallic: 1.0,
+      textureBytes: bytes,
+    );
+    final sphere = ArCoreSphere(
+      materials: [materials],
+      radius: 0.2, // Adjust the radius as needed
+    );
+
+    final node = ArCoreRotatingNode(
+      shape: sphere,
+      degreesPerSecond: 30,
+      position: spherePosition,
+      name: uuid.v4(),
+    );
+    coreController!.onNodeTap = _onArCoreNodeTap;
+
+    coreController!.addArCoreNode(node);
+    double distance = curPose.distanceTo(spherePosition);
+    double currentHeading = 0.0; // Assuming a default heading
+    double currentLat = currentPositionDir.latitude;
+    double currentLon = currentPositionDir.longitude;
+    final earthRadiusKilometers = 6371;
+    final earthRadiusMeters = earthRadiusKilometers * 1000;
+    final distanceInRadians = distance / earthRadiusMeters;
+    final changeInLatitude = distanceInRadians * cos(currentHeading);
+    final changeInLongitude = distanceInRadians * sin(currentHeading);
+    double newLatitude = _roundToDecimalPlaces(currentLat + changeInLatitude, 7);
+    double newLongitude = _roundToDecimalPlaces(currentLon + changeInLongitude, 7);
+    await _saveSpherePosition(spherePosition, currentHeading, distance, newLatitude, newLongitude, currentLat, currentLon);
+    Fluttertoast.showToast(
+      msg: 'Sphere placed Successfully',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
+    );
+  }
+
+  Future<void> _saveSpherePosition(vector64.Vector3 position, double currentHeading, double distance, double newLatitude, double newLongitude, double currentLat, double currentLon) async {
+    final uniqueId = uuid.v4();
+    try {
+      await FirebaseFirestore.instance.collection('spheres').doc(uniqueId).set({
+        'SphereLatitude': newLatitude,
+        'SphereLongitude': newLongitude,
+        'PhoneLatitude': currentLat,
+        'PhoneLongitude': currentLon,
+        'radius': 0.2, // Store the radius for reference
+        'timestamp': FieldValue.serverTimestamp(), // Use server timestamp
+      });
+      documentId = uniqueId;
+      Fluttertoast.showToast(
+        msg: 'Position saved successfully with ID: $documentId',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
+    } catch (error) {
+      Fluttertoast.showToast(
+        msg: 'Failed to save sphere position: $error',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
   }
 
   void _placeCubeWithoutPlane() async {
