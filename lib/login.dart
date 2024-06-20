@@ -1,157 +1,169 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'main.dart';
 
-class LoginRegistrationScreen extends StatefulWidget {
+class LoginScreen extends StatefulWidget {
   @override
-  _LoginRegistrationScreenState createState() => _LoginRegistrationScreenState();
+  _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginRegistrationScreenState extends State<LoginRegistrationScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  String _email = '';
+  String _password = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(_tabListener);
-  }
+  void _login() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
 
-  void _tabListener() {
-    setState(() {}); // Trigger a rebuild when tab changes to update the colors
-  }
+      try {
+        // Query Firestore for the user with the provided email
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: _email)
+            .get();
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+        if (querySnapshot.docs.isEmpty) {
+          Fluttertoast.showToast(
+            msg: 'No user found for that email.',
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+          );
+        } else {
+          var userDoc = querySnapshot.docs.first;
+          var storedPassword = userDoc['password'];
+
+          if (storedPassword == _password) {
+            // Show toast message for successful login
+            Fluttertoast.showToast(
+              msg: 'Login successful',
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: Colors.green,
+              textColor: Colors.white,
+            );
+
+            // Navigate to the HomeScreen after successful login
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => MyApp()), // Replace HomeScreen with your actual home screen widget
+            );
+          } else {
+            Fluttertoast.showToast(
+              msg: 'Wrong password provided.',
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+            );
+          }
+        }
+      } catch (e) {
+        print('Error logging in: $e');
+        Fluttertoast.showToast(
+          msg: 'An error occurred while logging in. Please try again.',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('AR Gram', style: TextStyle(color: Colors.white)),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          tabs: [
-            Tab(
-              text: 'Login',
-              icon: _tabController.index == 0 ? Icon(Icons.login, color: Colors.white) : Icon(Icons.login),
-            ),
-            Tab(
-              text: 'Register',
-              icon: _tabController.index == 1 ? Icon(Icons.person_add, color: Colors.white) : Icon(Icons.person_add),
-            ),
-          ],
-        ),
+        title: Text('Login', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          LoginForm(),
-          RegistrationForm(),
-        ],
-      ),
-    );
-  }
-}
-
-class LoginForm extends StatefulWidget {
-  @override
-  _LoginFormState createState() => _LoginFormState();
-}
-
-class _LoginFormState extends State<LoginForm> {
-  final _formKey = GlobalKey<FormState>();
-  String _email = '';
-  String _password = '';
-
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      // Perform login logic here
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              decoration: InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  return null;
+                },
+                onSaved: (value) {
+                  _email = value!;
+                },
               ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your email';
-                }
-                return null;
-              },
-              onSaved: (value) {
-                _email = value!;
-              },
-            ),
-            SizedBox(height: 20),
-            TextFormField(
-              decoration: InputDecoration(
-                labelText: 'Password',
-                prefixIcon: Icon(Icons.lock),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+              SizedBox(height: 20),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  return null;
+                },
+                onSaved: (value) {
+                  _password = value!;
+                },
               ),
-              obscureText: true,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your password';
-                }
-                return null;
-              },
-              onSaved: (value) {
-                _password = value!;
-              },
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _login,
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15), backgroundColor: Colors.deepPurple,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _login,
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  backgroundColor: Colors.deepPurple,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
+                child: Text('Login', style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
-              child: Text('Login', style: TextStyle(color: Colors.white, fontSize: 16)),
-            ),
-          ],
+              SizedBox(height: 20),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SignupScreen()), // Navigate to signup screen
+                  );
+                },
+                child: Text('Don\'t have an account? Sign up'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class RegistrationForm extends StatefulWidget {
+class SignupScreen extends StatefulWidget {
   @override
-  _RegistrationFormState createState() => _RegistrationFormState();
+  _SignupScreenState createState() => _SignupScreenState();
 }
 
-class _RegistrationFormState extends State<RegistrationForm> {
+class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   String _email = '';
   String _password = '';
@@ -161,88 +173,136 @@ class _RegistrationFormState extends State<RegistrationForm> {
       _formKey.currentState!.save();
 
       try {
+        // Create user with email and password
         UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _email,
           password: _password,
         );
 
+        // Store user data in Firestore
         await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
           'email': _email,
-          'password': _password,
+          'password': _password, // Note: Storing passwords in plaintext is not recommended
         });
 
+        // Show toast message for successful registration
+        Fluttertoast.showToast(
+          msg: 'Registration successful',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+
+        // Navigate to the HomeScreen after successful registration
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (context) => HomeScreen()), // Replace HomeScreen with your actual home screen widget
         );
       } catch (e) {
         print('Error creating user: $e');
-        // Handle the error, such as showing an error message to the user
+        String errorMessage;
+        if (e is FirebaseAuthException) {
+          switch (e.code) {
+            case 'email-already-in-use':
+              errorMessage = 'The email address is already in use by another account.';
+              break;
+            case 'invalid-email':
+              errorMessage = 'The email address is not valid.';
+              break;
+            case 'operation-not-allowed':
+              errorMessage = 'Email/password accounts are not enabled.';
+              break;
+            case 'weak-password':
+              errorMessage = 'The password is too weak.';
+              break;
+            default:
+              errorMessage = 'An undefined error occurred.';
+          }
+        } else {
+          errorMessage = 'An unknown error occurred.';
+        }
+        Fluttertoast.showToast(
+          msg: errorMessage,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              decoration: InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Signup', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.deepPurple,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  return null;
+                },
+                onSaved: (value) {
+                  _email = value!;
+                },
               ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your email';
-                }
-                return null;
-              },
-              onSaved: (value) {
-                _email = value!;
-              },
-            ),
-            SizedBox(height: 20),
-            TextFormField(
-              decoration: InputDecoration(
-                labelText: 'Password',
-                prefixIcon: Icon(Icons.lock),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+              SizedBox(height: 20),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  return null;
+                },
+                onSaved: (value) {
+                  _password = value!;
+                },
               ),
-              obscureText: true,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your password';
-                }
-                return null;
-              },
-              onSaved: (value) {
-                _password = value!;
-              },
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _register,
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15), backgroundColor: Colors.deepPurple,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _register,
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  backgroundColor: Colors.deepPurple,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
+                child: Text('Register', style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
-              child: Text('Register', style: TextStyle(color: Colors.white, fontSize: 16)),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
