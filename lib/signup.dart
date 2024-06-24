@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'login.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -39,10 +40,16 @@ class _SignupScreenState extends State<SignupScreen> {
       _formKey.currentState!.save();
 
       try {
+        // Create user using Firebase Auth
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _email,
+          password: _password,
+        );
 
-        await FirebaseFirestore.instance.collection('users').doc().set({
+        // Store additional user data in Firestore
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
           'email': _email,
-          'password':_password,
+          // Add other user data as needed
         });
 
         // Show toast message for successful registration
@@ -54,10 +61,13 @@ class _SignupScreenState extends State<SignupScreen> {
           textColor: Colors.white,
         );
 
-        // Navigate to the HomeScreen after successful registration
+        // Debug print to check if navigation code is reached
+        print('Navigation to LoginScreen');
+
+        // Navigate to the LoginScreen after successful registration
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => LoginScreen()), // Replace HomeScreen with your actual home screen widget
+          MaterialPageRoute(builder: (context) => LoginScreen()),
         );
       } catch (e) {
         print('Error creating user: $e');
@@ -165,5 +175,3 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 }
-
-

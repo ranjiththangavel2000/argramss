@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'main.dart';
 
+// LoginScreen widget
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -19,53 +19,47 @@ class _LoginScreenState extends State<LoginScreen> {
       _formKey.currentState!.save();
 
       try {
-        // Query Firestore for the user with the provided email
-        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .where('email', isEqualTo: _email)
-            .get();
+        // Sign in with email and password using Firebase Authentication
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _email,
+          password: _password,
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MyApp() // Replace HomeScreen with your actual home screen widget
+          ),);
+        // Show toast message for successful login
+        Fluttertoast.showToast(
+          msg: 'Login successful',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
 
-        if (querySnapshot.docs.isEmpty) {
-          Fluttertoast.showToast(
-            msg: 'No user found for that email.',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-          );
-        } else {
-          var userDoc = querySnapshot.docs.first;
-          var storedPassword = userDoc['password'];
+        // Navigate to the HomeScreen after successful login
 
-          if (storedPassword == _password) {
-            // Show toast message for successful login
-            Fluttertoast.showToast(
-              msg: 'Login successful',
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
-              backgroundColor: Colors.green,
-              textColor: Colors.white,
-            );
-
-            // Navigate to the HomeScreen after successful login
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => MyApp()), // Replace HomeScreen with your actual home screen widget
-            );
-          } else {
-            Fluttertoast.showToast(
-              msg: 'Wrong password provided.',
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
-              backgroundColor: Colors.red,
-              textColor: Colors.white,
-            );
-          }
-        }
       } catch (e) {
         print('Error logging in: $e');
+        String errorMessage = 'An error occurred while logging in. Please try again.';
+        if (e is FirebaseAuthException) {
+          switch (e.code) {
+            case 'invalid-email':
+              errorMessage = 'The email address is not valid.';
+              break;
+            case 'user-not-found':
+            case 'wrong-password':
+              errorMessage = 'Invalid email or password.';
+              break;
+            case 'user-disabled':
+              errorMessage = 'This account has been disabled.';
+              break;
+            default:
+              errorMessage = 'An undefined error occurred.';
+          }
+        }
         Fluttertoast.showToast(
-          msg: 'An error occurred while logging in. Please try again.',
+          msg: errorMessage,
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.red,
@@ -158,6 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// SignupScreen widget
 class SignupScreen extends StatefulWidget {
   @override
   _SignupScreenState createState() => _SignupScreenState();
@@ -173,17 +168,11 @@ class _SignupScreenState extends State<SignupScreen> {
       _formKey.currentState!.save();
 
       try {
-        // Create user with email and password
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        // Create user with email and password using Firebase Authentication
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _email,
           password: _password,
         );
-
-        // Store user data in Firestore
-        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-          'email': _email,
-          'password': _password, // Note: Storing passwords in plaintext is not recommended
-        });
 
         // Show toast message for successful registration
         Fluttertoast.showToast(
@@ -197,11 +186,11 @@ class _SignupScreenState extends State<SignupScreen> {
         // Navigate to the HomeScreen after successful registration
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()), // Replace HomeScreen with your actual home screen widget
+          MaterialPageRoute(builder: (context) => MyApp()), // Replace HomeScreen with your actual home screen widget
         );
       } catch (e) {
         print('Error creating user: $e');
-        String errorMessage;
+        String errorMessage = 'An error occurred while creating your account. Please try again.';
         if (e is FirebaseAuthException) {
           switch (e.code) {
             case 'email-already-in-use':
@@ -219,8 +208,6 @@ class _SignupScreenState extends State<SignupScreen> {
             default:
               errorMessage = 'An undefined error occurred.';
           }
-        } else {
-          errorMessage = 'An unknown error occurred.';
         }
         Fluttertoast.showToast(
           msg: errorMessage,
@@ -305,4 +292,3 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 }
-
